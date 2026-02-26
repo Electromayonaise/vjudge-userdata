@@ -1,34 +1,45 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="UTF-8">
-    <title>VJudge Stats Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+  <title>VJudge Stats Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
 
-    <div class="container">
-        <h1>VJudge Stats Dashboard</h1>
-        <p class="subtitle">Custom Node Client – Viability Test</p>
+  <h1>VJudge Stats Dashboard</h1>
 
-        <div class="search-box">
-            <input type="text" id="username" placeholder="Enter VJudge username">
-            <button onclick="fetchStats()">Get Stats</button>
-        </div>
+  <form id="searchForm">
+    <input type="text" id="username" placeholder="Enter username" required />
+    <button type="submit">Get Stats</button>
+  </form>
 
-        <div id="loading" class="hidden"></div>
+  <hr />
 
-        <div id="results" class="hidden">
-            <div class="card">
-                <h3>Raw JSON Response</h3>
-                <pre id="jsonOutput"></pre>
-            </div>
-        </div>
-    </div>
+  <h2>Submissions</h2>
 
-    <script src="app.js"></script>
+  <div style="margin-bottom:15px;">
+    <button id="tableViewBtn">Table View</button>
+    <button id="jsonViewBtn">JSON View</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>OJ</th>
+        <th>Problem</th>
+        <th>Status</th>
+        <th>Difficulty</th>
+      </tr>
+    </thead>
+    <tbody id="submissions"></tbody>
+  </table>
+
+  <pre id="jsonView" style="display:none;"></pre>
+
+  <div id="pagination" style="margin-top:20px;"></div>
+
+  <div id="metrics" style="margin-top:40px;"></div>
+
+  <script src="app.js"></script>
 </body>
-
 </html>

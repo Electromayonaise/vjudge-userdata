@@ -1,75 +1,76 @@
 body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #1f3c88, #1abc9c);
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  padding: 40px;
   color: white;
-  display: flex;
-  justify-content: center;
-  padding: 50px;
-}
-
-.container {
-  width: 500px;
-  text-align: center;
 }
 
 h1 {
   margin-bottom: 5px;
 }
 
-.subtitle {
-  opacity: 0.7;
+form {
+  margin-top: 20px;
   margin-bottom: 30px;
 }
 
-.search-box {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
 input {
-  flex: 1;
   padding: 10px;
-  border-radius: 8px;
+  width: 250px;
+  border-radius: 5px;
   border: none;
+  outline: none;
 }
 
 button {
   padding: 10px 15px;
-  border-radius: 8px;
+  margin-left: 10px;
+  border-radius: 5px;
   border: none;
   cursor: pointer;
-  background: #00c6ff;
-  color: black;
+  background-color: #00c6ff;
+  color: white;
   font-weight: bold;
-  transition: 0.3s;
 }
 
-button:hover {
-  background: #00a2d3;
+button:disabled {
+  background-color: gray;
+  cursor: not-allowed;
 }
 
-.card {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  border-radius: 12px;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  color: black;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th {
+  background-color: #1f3c88;
+  color: white;
+  padding: 10px;
+}
+
+td {
+  padding: 8px;
+  text-align: center;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+#pagination {
   margin-top: 20px;
-  backdrop-filter: blur(10px);
+  text-align: center;
 }
 
-.hidden {
-  display: none;
-}
-
-pre {
-  background: #1e1e1e;
-  color: #00ffcc;
+#metrics {
+  margin-top: 40px;
   padding: 20px;
-  border-radius: 12px;
-  overflow-x: auto;
-  max-height: 400px;
-  text-align: left;
-  font-size: 0.9em;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
 }

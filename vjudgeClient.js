@@ -1,178 +1,108 @@
 import axios from "axios";
 
-class VJudgeClient {
+export default class VJudgeClient {
   constructor() {
-    this.baseURL = "https://vjudge.net";
+    this.baseURL = "https://vjudge.net/status/data";
+    this.headers = {
+      "User-Agent": "Mozilla/5.0"
+    };
+    this.pageSize = 20;
   }
 
-  async getUserSubmissions(username, page = 0, length = 100) {
-    const response = await axios.get(`${this.baseURL}/status/data`, {
+  async getUserSubmissions(username, page = 0) {
+    const start = page * this.pageSize;
+
+    const response = await axios.get(this.baseURL, {
+      headers: this.headers,
       params: {
-        draw: 1,
-        start: page * length,
-        length,
+        draw: page + 1,
+        start: start,
+        length: this.pageSize,
         un: username,
         OJId: "All",
         probNum: "",
-        res: 0,
+        res: 0, // 🔥 ALL submissions
         language: "",
         onlyFollowee: false,
+        orderBy: "run_id",
         _: Date.now()
-      },
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
       }
+    });
+
+    console.log("DEBUG PAGINATION:", {
+      page,
+      start,
+      count: response.data.data.length
     });
 
     return response.data.data;
   }
 
-  // -------------------------------
-  // PLATFORM DIFFICULTY FETCHERS
-  // -------------------------------
+  async getProblemDifficulty(oj, problemId) {
+    return "Unknown";
+  }
 
-  async getCodeforcesDifficulty(probNum) {
-    try {
-      const contestId = parseInt(probNum.match(/\d+/)?.[0]);
-      const index = probNum.replace(contestId, "");
+  async getUserPageData(username, page = 0) {
+    const submissions = await this.getUserSubmissions(username, page);
 
-      const res = await axios.get(
-        "https://codeforces.com/api/problemset.problems"
-      );
-
-      const problems = res.data.result.problems;
-      const found = problems.find(
-        p => p.contestId === contestId && p.index === index
-      );
-
-      return found?.rating || "Unknown";
-    } catch {
-      return "Integration error";
+    if (!submissions || submissions.length === 0) {
+      return {
+        page,
+        pageSize: this.pageSize,
+        hasMore: false,
+        submissions: [],
+        metrics: {
+          totalSubmissions: 0,
+          accepted: 0,
+          uniqueSolved: 0,
+          acceptanceRate: 0
+        },
+        raw: []
+      };
     }
-  }
 
-  async getLeetCodeDifficulty(slug) {
-    try {
-      const res = await axios.post("https://leetcode.com/graphql", {
-        query: `
-          query getQuestionDetail($titleSlug: String!) {
-            question(titleSlug: $titleSlug) {
-              difficulty
-            }
-          }
-        `,
-        variables: { titleSlug: slug }
-      });
+    let acceptedCount = 0;
+    let uniqueAcceptedProblems = new Set();
 
-      return res.data.data.question.difficulty;
-    } catch {
-      return "Integration error";
-    }
-  }
+    const enriched = [];
 
-  async getAtCoderDifficulty() {
-    return "Integration pending";
-  }
+    for (const sub of submissions) {
+      const oj = sub.oj;
+      const problemId = sub.problemId;
+      const status = sub.status;
 
-  async getCSESDifficulty() {
-    return "Integration pending";
-  }
-
-  // -------------------------------
-  // MAIN DASHBOARD LOGIC
-  // -------------------------------
-
-  async getUserDashboard(username) {
-    const submissions = await this.getUserSubmissions(username);
-
-    const accepted = submissions.filter(s => s.status === "Accepted");
-
-    // Eliminar duplicados (último AC por problema)
-    const uniqueProblems = {};
-    accepted.forEach(sub => {
-      const key = `${sub.oj}_${sub.probNum}`;
-      if (!uniqueProblems[key] || sub.time > uniqueProblems[key].time) {
-        uniqueProblems[key] = sub;
-      }
-    });
-
-    const uniqueAccepted = Object.values(uniqueProblems);
-
-    // Obtener dificultades
-    const difficultyData = [];
-
-    for (const sub of uniqueAccepted) {
-      let difficulty;
-
-      switch (sub.oj) {
-        case "CodeForces":
-          difficulty = await this.getCodeforcesDifficulty(sub.probNum);
-          break;
-        case "LeetCode":
-          difficulty = await this.getLeetCodeDifficulty(sub.probNum);
-          break;
-        case "AtCoder":
-          difficulty = await this.getAtCoderDifficulty();
-          break;
-        case "CSES":
-          difficulty = await this.getCSESDifficulty();
-          break;
-        default:
-          difficulty = "Integration pending";
+      if (status === "Accepted") {
+        acceptedCount++;
+        uniqueAcceptedProblems.add(`${oj}-${problemId}`);
       }
 
-      difficultyData.push({
-        platform: sub.oj,
-        problem: sub.probNum,
+      const difficulty = await this.getProblemDifficulty(oj, problemId);
+
+      enriched.push({
+        oj,
+        problemId,
+        status,
         difficulty
       });
     }
 
-    // -------------------------------
-    // CALCULATED METRICS
-    // -------------------------------
-
-    const platforms = {};
-    uniqueAccepted.forEach(sub => {
-      platforms[sub.oj] = (platforms[sub.oj] || 0) + 1;
-    });
-
-    const firstSolve = new Date(
-      Math.min(...uniqueAccepted.map(s => s.time))
-    ).toLocaleString();
-
-    const lastSolve = new Date(
-      Math.max(...uniqueAccepted.map(s => s.time))
-    ).toLocaleString();
-
-    const languages = {};
-    uniqueAccepted.forEach(sub => {
-      languages[sub.language] = (languages[sub.language] || 0) + 1;
-    });
+    const metrics = {
+      totalSubmissions: submissions.length,
+      accepted: acceptedCount,
+      uniqueSolved: uniqueAcceptedProblems.size,
+      acceptanceRate:
+        submissions.length === 0
+          ? 0
+          : ((acceptedCount / submissions.length) * 100).toFixed(2)
+    };
 
     return {
-      rawSubmissions: {
-        username,
-        totalAccepted: uniqueAccepted.length,
-        submissions: uniqueAccepted.map(sub => ({
-          platform: sub.oj,
-          problem: sub.probNum,
-          language: sub.language,
-          runtime: sub.runtime,
-          date: new Date(sub.time).toLocaleString()
-        }))
-      },
-      difficultyData,
-      calculatedMetrics: {
-        totalUniqueSolved: uniqueAccepted.length,
-        problemsByPlatform: platforms,
-        firstSolve,
-        lastSolve,
-        languagesUsed: languages
-      }
+      page,
+      pageSize: this.pageSize,
+      hasMore: submissions.length === this.pageSize,
+      submissions: enriched,
+      metrics,
+      raw: submissions
     };
   }
 }
-
-export default VJudgeClient;
