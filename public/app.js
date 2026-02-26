@@ -1,8 +1,12 @@
 let currentPage = 0;
 let currentUsername = "";
+let currentPageSize = 20;
 
 async function loadUser(username, page = 0) {
-  const res = await fetch(`/api/user/${username}?page=${page}`);
+  const res = await fetch(
+    `/api/user/${username}?page=${page}&pageSize=${currentPageSize}`
+  );
+
   const data = await res.json();
 
   currentPage = data.page;
@@ -66,6 +70,21 @@ function renderJSON(data) {
   const pre = document.getElementById("jsonView");
   pre.textContent = JSON.stringify(data, null, 2);
 }
+
+document.getElementById("applyPageSizeBtn").addEventListener("click", () => {
+  const value = parseInt(document.getElementById("pageSizeInput").value);
+
+  if (!value || value <= 0) {
+    alert("Please enter a valid number.");
+    return;
+  }
+
+  currentPageSize = value;
+
+  if (currentUsername) {
+    loadUser(currentUsername, 0); // reset to first page
+  }
+});
 
 document.getElementById("tableViewBtn").addEventListener("click", () => {
   document.querySelector("table").style.display = "table";

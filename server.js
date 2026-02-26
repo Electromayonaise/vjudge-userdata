@@ -9,21 +9,17 @@ const PORT = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const vjudge = new VJudgeClient();
-
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/user/:username", async (req, res) => {
   try {
     const { username } = req.params;
     const page = parseInt(req.query.page) || 0;
-    const pageSize = 40;
+    const pageSize = parseInt(req.query.pageSize) || 20;
 
-    const data = await vjudge.getUserPageData(
-      username,
-      page,
-      pageSize
-    );
+    const vjudge = new VJudgeClient(pageSize);
+
+    const data = await vjudge.getUserPageData(username, page);
 
     res.json(data);
   } catch (err) {

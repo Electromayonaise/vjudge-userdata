@@ -1,46 +1,56 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>VJudge Stats Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
+    <title>VJudge Stats Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-  <h1>VJudge Stats Dashboard</h1>
+    <h1>VJudge Stats Dashboard</h1>
 
-  <form id="searchForm">
-    <input type="text" id="username" placeholder="Enter username" required />
-    <button type="submit">Get Stats</button>
-  </form>
+    <form id="searchForm">
+        <input type="text" id="username" placeholder="Enter username" required />
+        <button type="submit">Get Stats</button>
+    </form>
 
-  <hr />
+    <hr />
 
-  <h2>Submissions</h2>
+    <h2>Submissions</h2>
 
-  <div style="margin-bottom:15px;">
-    <button id="tableViewBtn">Table View</button>
-    <button id="jsonViewBtn">JSON View</button>
-  </div>
+    <div style="margin-bottom:15px;">
+        <button id="tableViewBtn">Table View</button>
+        <button id="jsonViewBtn">JSON View</button>
 
-  <table>
-    <thead>
-      <tr>
-        <th>OJ</th>
-        <th>Problem</th>
-        <th>Problem ID (Vjudge)</th>
-        <th>Status</th>
-        <th>Difficulty</th>
-      </tr>
-    </thead>
-    <tbody id="submissions"></tbody>
-  </table>
+        <label style="margin-left:20px;">
+            Results:
+            <input type="number" id="pageSizeInput" value="20" min="1" style="width:60px;">
+        </label>
 
-  <pre id="jsonView" style="display:none;"></pre>
+        <button id="applyPageSizeBtn">Apply</button>
+    </div>
 
-  <div id="pagination" style="margin-top:20px;"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>OJ</th>
+                <th>Problem</th>
+                <th>Problem ID (Vjudge)</th>
+                <th>Status</th>
+                <th>Difficulty</th>
+            </tr>
+        </thead>
+        <tbody id="submissions"></tbody>
+    </table>
 
-  <div id="metrics" style="margin-top:40px;"></div>
+    <pre id="jsonView" style="display:none;"></pre>
 
-  <script src="app.js"></script>
+    <div id="pagination" style="margin-top:20px;"></div>
+
+    <div id="metrics" style="margin-top:40px;"></div>
+
+    <script src="app.js"></script>
 </body>
+
 </html>
