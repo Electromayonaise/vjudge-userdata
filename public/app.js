@@ -22,6 +22,7 @@ function renderTable(submissions) {
 
     row.innerHTML = `
       <td>${sub.oj}</td>
+      <td>${sub.problem}</td>
       <td>${sub.problemId}</td>
       <td>${sub.status}</td>
       <td>${sub.difficulty}</td>

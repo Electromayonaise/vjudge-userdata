@@ -8,7 +8,6 @@ export default class VJudgeClient {
       "User-Agent": "Mozilla/5.0"
     };
     this.pageSize = 20;
-
     this.difficultyCache = new Map();
   }
 
@@ -32,16 +31,9 @@ export default class VJudgeClient {
       }
     });
 
-    console.log("DEBUG PAGINATION:", {
-      page,
-      start,
-      count: response.data.data.length
-    });
-
     return response.data.data;
   }
 
-  // 🔥 AHORA USA LOS PROVIDERS
   async getProblemDifficulty(oj, problemId, probNum) {
     const cacheKey = `${oj}-${problemId}`;
 
@@ -88,7 +80,7 @@ export default class VJudgeClient {
     for (const sub of submissions) {
       const oj = sub.oj;
       const problemId = sub.problemId;
-      const probNum = sub.probNum;
+      const probNum = sub.probNum; // nombre
       const status = sub.status;
 
       if (status === "Accepted") {
@@ -104,7 +96,8 @@ export default class VJudgeClient {
 
       enriched.push({
         oj,
-        problemId,
+        problem: probNum,      // Nombre
+        problemId: problemId,  // id interno de Vjudge
         status,
         difficulty
       });
