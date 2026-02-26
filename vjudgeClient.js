@@ -1,4 +1,5 @@
 import axios from "axios";
+import { resolveDifficulty } from "./difficultyProviders/index.js";
 
 export default class VJudgeClient {
   constructor() {
@@ -7,6 +8,8 @@ export default class VJudgeClient {
       "User-Agent": "Mozilla/5.0"
     };
     this.pageSize = 20;
+
+    this.difficultyCache = new Map();
   }
 
   async getUserSubmissions(username, page = 0) {
@@ -21,7 +24,7 @@ export default class VJudgeClient {
         un: username,
         OJId: "All",
         probNum: "",
-        res: 0, // 🔥 ALL submissions
+        res: 0,
         language: "",
         onlyFollowee: false,
         orderBy: "run_id",
@@ -38,8 +41,24 @@ export default class VJudgeClient {
     return response.data.data;
   }
 
-  async getProblemDifficulty(oj, problemId) {
-    return "Unknown";
+  // 🔥 AHORA USA LOS PROVIDERS
+  async getProblemDifficulty(oj, problemId, probNum) {
+    const cacheKey = `${oj}-${problemId}`;
+
+    if (this.difficultyCache.has(cacheKey)) {
+      return this.difficultyCache.get(cacheKey);
+    }
+
+    let difficulty = "Unknown";
+
+    try {
+      difficulty = await resolveDifficulty(oj, probNum);
+    } catch (err) {
+      console.log("Difficulty fetch error:", err.message);
+    }
+
+    this.difficultyCache.set(cacheKey, difficulty);
+    return difficulty;
   }
 
   async getUserPageData(username, page = 0) {
@@ -69,6 +88,7 @@ export default class VJudgeClient {
     for (const sub of submissions) {
       const oj = sub.oj;
       const problemId = sub.problemId;
+      const probNum = sub.probNum;
       const status = sub.status;
 
       if (status === "Accepted") {
@@ -76,7 +96,11 @@ export default class VJudgeClient {
         uniqueAcceptedProblems.add(`${oj}-${problemId}`);
       }
 
-      const difficulty = await this.getProblemDifficulty(oj, problemId);
+      const difficulty = await this.getProblemDifficulty(
+        oj,
+        problemId,
+        probNum
+      );
 
       enriched.push({
         oj,
