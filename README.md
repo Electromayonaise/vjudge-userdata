@@ -1,226 +1,185 @@
-# Prueba de Viabilidad Técnica  
-## Integración VJudge + Enriquecimiento Multi-Plataforma
+# Prueba de Viabilidad Técnica
 
----
+## Integración VJudge + Enriquecimiento Multi-Plataforma (Versión Paginada)
+
+------------------------------------------------------------------------
 
 ## Descripción
 
-Este módulo corresponde a una **prueba de viabilidad técnica** para el proyecto:
+Este módulo corresponde a una **prueba de viabilidad técnica** para el
+proyecto:
 
-> Plataforma web gamificada para la sistematización del ingreso y entrenamiento de estudiantes del Club de Programación Competitiva.
+> Plataforma web gamificada para la sistematización del ingreso y
+> entrenamiento de estudiantes del Club de Programación Competitiva.
 
-El objetivo de esta implementación es demostrar que es técnicamente posible:
+Esta versión demuestra que es técnicamente posible:
 
-- Obtener datos reales de actividad desde **VJudge**
-- Enriquecer dichos datos con información externa (dificultad)
-- Calcular métricas relevantes para analítica y gamificación
-- Unificar información de múltiples jueces en un solo modelo estructurado
+-   Obtener datos reales desde **VJudge**
+-   Implementar paginación controlada por el usuario
+-   Unificar información multi-plataforma
+-   Enriquecer datos con dificultad externa
+-   Calcular métricas dinámicas por página
+-   Exponer un modelo JSON estructurado listo para microservicio
 
----
+------------------------------------------------------------------------
 
 ## Alcance de esta versión
 
-Esta versión implementa:
-
 ### 1. Extracción de datos desde VJudge
+
 Se utiliza el endpoint interno:
-```
+
 GET https://vjudge.net/status/data
-```
 
-Permite obtener:
+Características: - Límite real de VJudge: 20 registros por request - El
+sistema implementa agregación interna automática - Soporta `pageSize`
+configurable (máximo 100) - Requests paralelos mediante Promise.all
 
-- Plataforma (`oj`)
-- Problema (`probNum`)
-- Lenguaje
-- Runtime
-- Fecha de envío
-- Estado (Accepted, Wrong Answer, etc.)
+------------------------------------------------------------------------
 
----
+### 2. Paginación dinámica
 
-### 2. Normalización de datos
+El usuario puede seleccionar la cantidad de resultados por página
+(1--100).
 
-- Filtrado únicamente de envíos **Accepted**
-- Eliminación de duplicados (último AC por problema)
-- Conversión de timestamps a fechas legibles
+Backend: - Normaliza el valor - Limita a máximo 100 - Divide
+internamente en bloques de 20 si es necesario
 
----
+------------------------------------------------------------------------
 
 ### 3. Enriquecimiento de dificultad
 
 Integraciones actuales:
 
-| Plataforma     | Fuente de dificultad |
-|--------------|---------------------|
-| Codeforces   | API oficial pública |
-| LeetCode     | GraphQL pública |
-| Otros        | "Integration pending" |
+  Plataforma   Fuente de dificultad
+  ------------ -----------------------------------------------
+  CodeForces   API oficial pública (`problemset.problems`)
+  LeetCode     GraphQL pública
+  HackerRank   Integración básica (pendiente rating oficial)
+  CodeChef     Integración básica
+  CSES         Integración pendiente
 
----
+Notas: - Algunos problemas recientes pueden no tener rating asignado por
+Codeforces. - En esos casos se retorna `"Unknown"`.
 
-### 4.Métricas calculadas
+------------------------------------------------------------------------
 
-Se genera automáticamente:
+### 4. Métricas calculadas (por página)
 
-- Total de problemas únicos resueltos
-- Distribución por plataforma
-- Primer problema resuelto
-- Último problema resuelto
-- Lenguajes utilizados
+-   Total de submissions
+-   Accepted
+-   Unique solved
+-   Acceptance rate (%)
+-   Total de registros globales
+-   Total de páginas disponibles
 
----
+------------------------------------------------------------------------
+
+## Nueva estructura del JSON
+
+Ejemplo de respuesta:
+
+``` json
+{
+  "page": 0,
+  "pageSize": 40,
+  "totalRecords": 9999999,
+  "totalPages": 250000,
+  "hasMore": true,
+  "submissions": [
+    {
+      "oj": "HackerRank",
+      "problem": "find-the-median",
+      "problemId": 588570,
+      "status": "Accepted",
+      "difficulty": "Unknown"
+    }
+  ],
+  "metrics": {
+    "totalSubmissions": 5,
+    "accepted": 3,
+    "uniqueSolved": 2,
+    "acceptanceRate": "60.00"
+  },
+  "raw": [
+    {
+      "memory": 0,
+      "runtime": 1553,
+      "language": "java",
+      "oj": "HackerRank",
+      "problemId": 588570,
+      "probNum": "find-the-median",
+      "status": "Accepted"
+    }
+  ]
+}
+```
+
+------------------------------------------------------------------------
 
 ## Estructura del proyecto
 
-```
-vjudge-demo/
-├── server.js
-├── vjudgeClient.js
-├── package.json
-└── public/
-    ├── index.html
-    ├── style.css
-    └── app.js
-```
+    vjudge-demo/
+    ├── server.js
+    ├── vjudgeClient.js
+    ├── difficultyProviders/
+    │   ├── codeforces.js
+    │   ├── leetcode.js
+    │   ├── hackerrank.js
+    │   ├── codechef.js
+    │   └── index.js
+    ├── package.json
+    └── public/
+        ├── index.html
+        ├── style.css
+        └── app.js
 
----
+------------------------------------------------------------------------
 
-##  Requisitos
+## Requisitos
 
-- Node.js v18+
-- npm
+-   Node.js v18+
+-   npm
 
----
+------------------------------------------------------------------------
 
 ## Instalación
 
-1. Clonar o descargar el proyecto.
+1.  Clonar o descargar el proyecto.
 
-2.Instalar dependencias:
+2.  Instalar dependencias:
 
-```bash
 npm install
-```
-3. Iniciar el servidor:
 
-```bash
+3.  Iniciar el servidor:
+
 npm start
-```
-4. Abrir `http://localhost:3000` en el navegador. 
 
----
+4.  Abrir en navegador:
 
-## Uso 
+http://localhost:3000
 
-1. Ingresar el nombre de usuario de VJudge en el campo correspondiente.
+------------------------------------------------------------------------
 
-2. El sistema:
-- Consulta VJudge
-- Filtra Accepted
-- Elimina duplicados
-- Consulta dificultad externa
-- Calcula métricas
+## Flujo de funcionamiento
 
-3. Se muestra el JSON completo formateado.
+1.  Usuario ingresa username.
+2.  Backend consulta VJudge.
+3.  Se agregan múltiples requests si pageSize \> 20.
+4.  Se enriquecen dificultades externas.
+5.  Se calculan métricas.
+6.  Se devuelve JSON estructurado.
+7.  Frontend muestra tabla y vista JSON.
 
-Ejemplo de salida:
+------------------------------------------------------------------------
 
-```json
-{
-  "rawSubmissions": {
-    "username": "youssef579",
-    "totalAccepted": 6,
-    "submissions": [
-      {
-        "platform": "CodeForces",
-        "problem": "1742D",
-        "language": "GNU G++20 13.2 (64 bit, winlibs)",
-        "runtime": 343,
-        "date": "2/25/2026, 6:55:25 PM"
-      },
-      {
-        "platform": "CodeForces",
-        "problem": "1627D",
-        "language": "GNU G++20 13.2 (64 bit, winlibs)",
-        "runtime": 250,
-        "date": "2/25/2026, 6:47:48 PM"
-      },
-      {
-        "platform": "CodeForces",
-        "problem": "490C",
-        "language": "GNU G++20 13.2 (64 bit, winlibs)",
-        "runtime": 109,
-        "date": "2/25/2026, 5:25:57 PM"
-      },
-      {
-        "platform": "CodeForces",
-        "problem": "1850F",
-        "language": "GNU G++20 13.2 (64 bit, winlibs)",
-        "runtime": 62,
-        "date": "2/25/2026, 4:51:36 PM"
-      },
-      {
-        "platform": "CodeForces",
-        "problem": "913A",
-        "language": "GNU G++20 13.2 (64 bit, winlibs)",
-        "runtime": 46,
-        "date": "2/25/2026, 4:40:28 PM"
-      },
-      {
-        "platform": "CSES",
-        "problem": "1079",
-        "language": "C++17",
-        "runtime": 70,
-        "date": "2/24/2026, 11:46:06 PM"
-      }
-    ]
-  },
-  "difficultyData": [
-    {
-      "platform": "CodeForces",
-      "problem": "1742D",
-      "difficulty": 1100
-    },
-    {
-      "platform": "CodeForces",
-      "problem": "1627D",
-      "difficulty": 1900
-    },
-    {
-      "platform": "CodeForces",
-      "problem": "490C",
-      "difficulty": 1700
-    },
-    {
-      "platform": "CodeForces",
-      "problem": "1850F",
-      "difficulty": 1300
-    },
-    {
-      "platform": "CodeForces",
-      "problem": "913A",
-      "difficulty": 900
-    },
-    {
-      "platform": "CSES",
-      "problem": "1079",
-      "difficulty": "Integration pending"
-    }
-  ],
-  "calculatedMetrics": {
-    "totalUniqueSolved": 6,
-    "problemsByPlatform": {
-      "CodeForces": 5,
-      "CSES": 1
-    },
-    "firstSolve": "2/24/2026, 11:46:06 PM",
-    "lastSolve": "2/25/2026, 6:55:25 PM",
-    "languagesUsed": {
-      "GNU G++20 13.2 (64 bit, winlibs)": 5,
-      "C++17": 1
-    }
-  },
-  "cached": false
-}
-```
+## Conclusión Técnica
+
+Esta prueba valida que:
+
+-   Es viable construir un microservicio independiente basado en VJudge.
+-   Es posible enriquecer datos multi-OJ.
+-   Se puede escalar hasta 100 resultados por página.
+-   La arquitectura es modular y extensible.
+-   El sistema está listo para convertirse en módulo npm o microservicio
+    productivo.
