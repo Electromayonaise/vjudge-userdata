@@ -1,56 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <title>VJudge Stats Dashboard</title>
     <link rel="stylesheet" href="style.css" />
-</head>
+  </head>
 
-<body>
-
+  <body>
     <h1>VJudge Stats Dashboard</h1>
 
     <form id="searchForm">
-        <input type="text" id="username" placeholder="Enter username" required />
-        <button type="submit">Get Stats</button>
+      <input type="text" id="username" placeholder="Enter username" required />
+      <button type="submit">Get Stats</button>
     </form>
 
     <hr />
 
     <h2>Submissions</h2>
 
-    <div style="margin-bottom:15px;">
-        <button id="tableViewBtn">Table View</button>
-        <button id="jsonViewBtn">JSON View</button>
+    <div style="margin-bottom: 15px">
+      <button id="tableViewBtn">Table View</button>
+      <button id="jsonViewBtn">JSON View</button>
 
-        <label style="margin-left:20px;">
-            Results:
-            <input type="number" id="pageSizeInput" value="20" min="1" style="width:60px;">
-        </label>
+      <label style="margin-left: 20px">
+        Results:
+        <input
+          type="number"
+          id="pageSizeInput"
+          value="20"
+          min="1"
+          style="width: 60px"
+        />
+      </label>
 
-        <button id="applyPageSizeBtn">Apply</button>
+      <button id="applyPageSizeBtn">Apply</button>
     </div>
 
     <table>
-        <thead>
-            <tr>
-                <th>OJ</th>
-                <th>Problem</th>
-                <th>Problem ID (Vjudge)</th>
-                <th>Status</th>
-                <th>Difficulty</th>
-            </tr>
-        </thead>
-        <tbody id="submissions"></tbody>
+      <thead>
+        <tr>
+          <th>OJ</th>
+          <th>Problem</th>
+          <th>Problem ID (Vjudge)</th>
+          <th>Contest Name</th>
+          <th>Contest Problem</th>
+          <th>Status</th>
+          <th>Difficulty</th>
+        </tr>
+      </thead>
+      <tbody id="submissions"></tbody>
     </table>
 
-    <pre id="jsonView" style="display:none;"></pre>
+    <pre id="jsonView" style="display: none"></pre>
 
-    <div id="pagination" style="margin-top:20px;"></div>
+    <div id="pagination" style="margin-top: 20px"></div>
 
-    <div id="metrics" style="margin-top:40px;"></div>
+    <div id="metrics" style="margin-top: 40px"></div>
 
     <script src="app.js"></script>
-</body>
-
+  </body>
 </html>

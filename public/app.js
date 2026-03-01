@@ -28,6 +28,8 @@ function renderTable(submissions) {
       <td>${sub.oj}</td>
       <td>${sub.problem}</td>
       <td>${sub.problemId}</td>
+      <td>${sub.contestName ?? "-"}</td>
+      <td>${sub.contestNum ?? "-"}</td>
       <td>${sub.status}</td>
       <td>${sub.difficulty}</td>
     `;
@@ -82,7 +84,7 @@ document.getElementById("applyPageSizeBtn").addEventListener("click", () => {
   currentPageSize = value;
 
   if (currentUsername) {
-    loadUser(currentUsername, 0); // reset to first page
+    loadUser(currentUsername, 0);
   }
 });
 

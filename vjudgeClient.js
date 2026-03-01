@@ -9,17 +9,15 @@ export default class VJudgeClient {
     };
 
     this.MAX_PAGE_SIZE = 100;
-
-    // límite real de VJudge
     this.VJUDGE_LIMIT = 20;
 
-    // normalizamos el pageSize
     this.pageSize = Math.min(
       Math.max(parseInt(pageSize) || 20, 1),
       this.MAX_PAGE_SIZE
     );
 
     this.difficultyCache = new Map();
+    this.contestCache = new Map(); 
   }
 
   async getUserSubmissions(username, page = 0) {
@@ -56,7 +54,6 @@ export default class VJudgeClient {
       );
     }
 
-    // 🔥 requests en paralelo
     const responses = await Promise.all(requests);
 
     let total = 0;
@@ -99,6 +96,31 @@ export default class VJudgeClient {
     return difficulty;
   }
 
+  // 🔥 NUEVO: obtener nombre del contest
+  async getContestName(contestId) {
+    if (!contestId) return null;
+
+    if (this.contestCache.has(contestId)) {
+      return this.contestCache.get(contestId);
+    }
+
+    try {
+      const response = await axios.get(
+        `https://vjudge.net/contest/rank/single/${contestId}`,
+        { headers: this.headers }
+      );
+
+      const title = response.data?.title || null;
+
+      this.contestCache.set(contestId, title);
+      return title;
+    } catch (err) {
+      console.log("Contest fetch error:", err.message);
+      this.contestCache.set(contestId, null);
+      return null;
+    }
+  }
+
   async getUserPageData(username, page = 0) {
     const { submissions, total } = await this.getUserSubmissions(
       username,
@@ -110,7 +132,14 @@ export default class VJudgeClient {
     const enriched = [];
 
     for (const sub of submissions) {
-      const { oj, problemId, probNum, status } = sub;
+      const {
+        oj,
+        problemId,
+        probNum,
+        status,
+        contestId,
+        contestNum
+      } = sub;
 
       if (status === "Accepted") {
         acceptedCount++;
@@ -123,10 +152,15 @@ export default class VJudgeClient {
         probNum
       );
 
+      const contestName = await this.getContestName(contestId);
+
       enriched.push({
         oj,
         problem: probNum,
         problemId,
+        contestId,
+        contestNum,
+        contestName,
         status,
         difficulty
       });
