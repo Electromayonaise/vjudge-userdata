@@ -17,7 +17,7 @@ export default class VJudgeClient {
     );
 
     this.difficultyCache = new Map();
-    this.contestCache = new Map(); 
+    this.contestCache = new Map();
   }
 
   async getUserSubmissions(username, page = 0) {
@@ -96,7 +96,6 @@ export default class VJudgeClient {
     return difficulty;
   }
 
-  // 🔥 NUEVO: obtener nombre del contest
   async getContestName(contestId) {
     if (!contestId) return null;
 
@@ -129,49 +128,56 @@ export default class VJudgeClient {
 
     let acceptedCount = 0;
     let uniqueAcceptedProblems = new Set();
-    const enriched = [];
+
+    // Obtener sets únicos
+    const uniqueContests = new Set();
+    const uniqueProblems = new Set();
 
     for (const sub of submissions) {
-      const {
-        oj,
-        problemId,
-        probNum,
-        status,
-        contestId,
-        contestNum
-      } = sub;
-
-      if (status === "Accepted") {
+      if (sub.status === "Accepted") {
         acceptedCount++;
-        uniqueAcceptedProblems.add(`${oj}-${problemId}`);
+        uniqueAcceptedProblems.add(`${sub.oj}-${sub.problemId}`);
       }
 
-      const difficulty = await this.getProblemDifficulty(
-        oj,
-        problemId,
-        probNum
-      );
-
-      const contestName = await this.getContestName(contestId);
-
-      enriched.push({
-        oj,
-        problem: probNum,
-        problemId,
-        contestId,
-        contestNum,
-        contestName,
-        status,
-        difficulty
-      });
+      if (sub.contestId) uniqueContests.add(sub.contestId);
+      uniqueProblems.add(`${sub.oj}-${sub.problemId}-${sub.probNum}`);
     }
+
+    // Pre-fetch paralelo de contests
+    await Promise.all(
+      [...uniqueContests].map(id => this.getContestName(id))
+    );
+
+    // Pre-fetch paralelo de difficulties
+    await Promise.all(
+      [...uniqueProblems].map(key => {
+        const [oj, problemId, probNum] = key.split("-");
+        return this.getProblemDifficulty(oj, problemId, probNum);
+      })
+    );
+
+    // Enrichment ahora es síncrono (usa cache)
+    const enriched = submissions.map(sub => ({
+      oj: sub.oj,
+      problem: sub.probNum,
+      problemId: sub.problemId,
+      contestId: sub.contestId,
+      contestNum: sub.contestNum,
+      contestName: this.contestCache.get(sub.contestId) || null,
+      status: sub.status,
+      difficulty: this.difficultyCache.get(
+        `${sub.oj}-${sub.problemId}`
+      ) || "Unknown"
+    }));
+
+    const hasMore = submissions.length === this.pageSize;
 
     return {
       page,
       pageSize: this.pageSize,
       totalRecords: total,
       totalPages: Math.ceil(total / this.pageSize),
-      hasMore: (page + 1) * this.pageSize < total,
+      hasMore,
       submissions: enriched,
       metrics: {
         totalSubmissions: submissions.length,
@@ -181,8 +187,7 @@ export default class VJudgeClient {
           submissions.length === 0
             ? 0
             : ((acceptedCount / submissions.length) * 100).toFixed(2)
-      },
-      raw: submissions
+      }
     };
   }
 }
