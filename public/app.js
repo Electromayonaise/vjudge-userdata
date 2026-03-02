@@ -31,7 +31,8 @@ function renderTable(submissions) {
       <td>${sub.contestName ?? "-"}</td>
       <td>${sub.contestNum ?? "-"}</td>
       <td>${sub.status}</td>
-      <td>${sub.difficulty}</td>
+      <td>${sub.rawDifficulty ?? "Unknown"}</td>
+      <td>${sub.normalizedDifficulty ?? "Unknown"}</td>
     `;
 
     table.appendChild(row);

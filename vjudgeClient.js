@@ -84,19 +84,33 @@ export default class VJudgeClient {
       return this.difficultyCache.get(cacheKey);
     }
 
-    let difficulty = "Unknown";
+    let difficultyObject = {
+      raw: "Unknown",
+      normalized: "Unknown"
+    };
 
     try {
-      difficulty = await resolveDifficulty(oj, {
+      const result = await resolveDifficulty(oj, {
         probNum,
         slug
       });
+
+      // Aseguramos formato correcto
+      if (result && typeof result === "object") {
+        difficultyObject = result;
+      } else {
+        difficultyObject = {
+          raw: result,
+          normalized: result
+        };
+      }
+
     } catch (err) {
       console.log("Difficulty fetch error:", err.message);
     }
 
-    this.difficultyCache.set(cacheKey, difficulty);
-    return difficulty;
+    this.difficultyCache.set(cacheKey, difficultyObject);
+    return difficultyObject;
   }
 
   async getContestName(contestId) {
@@ -155,8 +169,6 @@ export default class VJudgeClient {
     await Promise.all(
       [...uniqueProblems].map(key => {
         const [oj, problemId, probNum] = key.split("|||");
-
-        // En muchos OJs el slug real es probNum
         const slug = probNum;
 
         return this.getProblemDifficulty(
@@ -168,19 +180,24 @@ export default class VJudgeClient {
       })
     );
 
-    const enriched = submissions.map(sub => ({
-      oj: sub.oj,
-      problem: sub.probNum,
-      problemId: sub.problemId,
-      slug: sub.probNum,
-      contestId: sub.contestId,
-      contestNum: sub.contestNum,
-      contestName: this.contestCache.get(sub.contestId) || null,
-      status: sub.status,
-      difficulty:
+    const enriched = submissions.map(sub => {
+      const diff =
         this.difficultyCache.get(`${sub.oj}-${sub.problemId}`) ||
-        "Unknown"
-    }));
+        { raw: "Unknown", normalized: "Unknown" };
+
+      return {
+        oj: sub.oj,
+        problem: sub.probNum,
+        problemId: sub.problemId,
+        slug: sub.probNum,
+        contestId: sub.contestId,
+        contestNum: sub.contestNum,
+        contestName: this.contestCache.get(sub.contestId) || null,
+        status: sub.status,
+        rawDifficulty: diff.raw,
+        normalizedDifficulty: diff.normalized
+      };
+    });
 
     const hasMore = submissions.length === this.pageSize;
 

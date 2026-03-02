@@ -5,33 +5,44 @@ import { getDMOJDifficulty } from "./dmoj.js";
 import { getCSESDifficulty } from "./cses.js";
 import { getHackerRankDifficulty } from "./hackerrank.js";
 import { getCodeChefDifficulty } from "./codechef.js";
+import { categorizeDifficulty } from "./difficultyNormalizer.js";
 
 export async function resolveDifficulty(oj, problemMeta) {
   const { probNum, slug } = problemMeta || {};
+  let rawDifficulty = "Unknown";
 
   switch (oj) {
     case "CodeForces":
-      return await getCodeforcesDifficulty(probNum);
+      rawDifficulty = await getCodeforcesDifficulty(probNum);
+      break;
 
     case "AtCoder":
-      return await getAtCoderDifficulty(probNum);
+      rawDifficulty = await getAtCoderDifficulty(probNum);
+      break;
 
     case "LeetCode":
-      return await getLeetCodeDifficulty(slug || probNum);
+      rawDifficulty = await getLeetCodeDifficulty(slug || probNum);
+      break;
 
     case "DMOJ":
-      return await getDMOJDifficulty(probNum);
+      rawDifficulty = await getDMOJDifficulty(probNum);
+      break;
 
     case "CSES":
-      return getCSESDifficulty(probNum);
+      rawDifficulty = getCSESDifficulty(probNum);
+      break;
 
     case "HackerRank":
-      return await getHackerRankDifficulty(slug || probNum);
+      rawDifficulty = await getHackerRankDifficulty(slug || probNum);
+      break;
 
     case "CodeChef":
-      return await getCodeChefDifficulty(probNum);
+      rawDifficulty = await getCodeChefDifficulty(probNum);
+      break;
 
     default:
-      return "Unknown";
+      rawDifficulty = "Unknown";
   }
+
+  return categorizeDifficulty(oj, rawDifficulty);
 }
