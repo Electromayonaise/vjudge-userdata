@@ -181,5 +181,140 @@ Esta prueba valida que:
 -   Es posible enriquecer datos multi-OJ.
 -   Se puede escalar hasta 100 resultados por página.
 -   La arquitectura es modular y extensible.
--   El sistema está listo para convertirse en módulo npm o microservicio
-    productivo.
+
+------------------------------------------------------------------------
+
+## Proyección Arquitectónica para Escalamiento
+
+Dado que el objetivo del proyecto es almacenar y gestionar información
+de múltiples usuarios de forma persistente, es importante considerar una
+arquitectura que minimice el riesgo de *rate limiting* por parte de
+VJudge y que permita sincronización incremental de datos.
+
+A continuación se describen dos posibles enfoques arquitectónicos
+viables.
+
+------------------------------------------------------------------------
+
+### Opción 1: Backend completo en Node.js (Monolito con Worker Interno)
+
+**Descripción:**\
+Construir tanto el backend principal como el servicio de sincronización
+en Node.js.
+
+**Arquitectura propuesta:**
+
+Frontend\
+→ Backend Node.js\
+→ Base de datos\
+→ (Worker interno Node.js para sincronización)\
+→ VJudge y OJs externos
+
+**Implementación recomendada:**
+
+-   Un solo repositorio.
+-   Dos entrypoints:
+    -   `server.js` (API principal)
+    -   `syncWorker.js` (proceso de sincronización)
+-   Uso de Redis para:
+    -   Cola de sincronización
+    -   Rate limiting
+    -   Cache temporal
+-   Dockerización con dos contenedores:
+    -   `backend`
+    -   `worker`
+-   Orquestación simple con Docker Compose.
+
+**Justificación técnica:**
+
+-   Node.js es altamente eficiente para cargas IO-bound (múltiples
+    requests HTTP).
+-   Ecosistema maduro para colas y rate limiting (BullMQ, ioredis,
+    p-limit).
+-   Implementación sencilla de concurrencia controlada.
+-   Menor complejidad operativa al usar una sola tecnología.
+
+**Cuándo conviene esta opción:**
+
+-   Equipo pequeño.
+-   Proyecto en etapa inicial o MVP.
+-   Necesidad de iterar rápido.
+-   Carga centrada en integración externa y no en lógica empresarial
+    compleja.
+
+------------------------------------------------------------------------
+
+### Opción 2: Backend en Spring + Sync Worker en Node.js
+
+**Descripción:**\
+Separar responsabilidades tecnológicas según el tipo de carga.
+
+**Arquitectura propuesta:**
+
+Frontend\
+→ Backend Spring Boot\
+→ Base de datos\
+→ Redis (cola)\
+→ Sync Worker Node.js\
+→ VJudge y OJs externos
+
+**Despliegue recomendado:**
+
+-   Backend Spring dockerizado.
+-   Worker Node dockerizado.
+-   Redis como contenedor independiente.
+-   Comunicación mediante:
+    -   Base de datos compartida o
+    -   Cola Redis (recomendado).
+-   Orquestación con Docker Compose o Kubernetes.
+
+**Justificación técnica:**
+
+-   Spring es robusto para:
+    -   Seguridad
+    -   Autenticación
+    -   Lógica de negocio compleja
+    -   Estructuras empresariales
+-   Node.js es más eficiente para:
+    -   IO intensivo
+    -   Scraping controlado
+    -   Manejo fino de concurrencia
+    -   Rate limiting dinámico
+-   Separación clara entre:
+    -   Dominio de negocio
+    -   Integración externa agresiva
+
+**Ventajas estratégicas:**
+
+-   Aislamiento de fallos: si VJudge falla, no afecta directamente al
+    backend principal.
+-   Escalabilidad independiente del worker.
+-   Mejor control de rate limiting global.
+-   Arquitectura preparada para múltiples plataformas futuras.
+
+**Cuándo conviene esta opción:**
+
+-   Proyecto con visión de producto a mediano/largo plazo.
+-   Necesidad de escalabilidad real.
+-   Backend con lógica empresarial compleja.
+-   Posible crecimiento del equipo técnico.
+
+------------------------------------------------------------------------
+
+## Recomendación Estratégica
+
+Para una prueba de viabilidad o MVP avanzado, la opción 1 (todo en
+Node.js) es más simple y rápida de implementar.
+
+Para un producto con proyección de crecimiento y múltiples usuarios, la
+opción 2 (Spring + Sync Worker Node) ofrece mejor separación de
+responsabilidades, mayor robustez estructural y mejor manejo del riesgo
+de rate limiting.
+
+En ambos escenarios, la clave para escalar correctamente no es consultar
+VJudge en tiempo real, sino implementar:
+
+-   Sincronización inicial completa.
+-   Actualización incremental basada en `run_id` o fecha.
+-   Persistencia en base de datos.
+-   Control estricto de concurrencia y frecuencia de actualización.
