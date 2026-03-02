@@ -77,7 +77,7 @@ export default class VJudgeClient {
     };
   }
 
-  async getProblemDifficulty(oj, problemId, probNum) {
+  async getProblemDifficulty(oj, problemId, probNum, slug) {
     const cacheKey = `${oj}-${problemId}`;
 
     if (this.difficultyCache.has(cacheKey)) {
@@ -87,7 +87,10 @@ export default class VJudgeClient {
     let difficulty = "Unknown";
 
     try {
-      difficulty = await resolveDifficulty(oj, probNum);
+      difficulty = await resolveDifficulty(oj, {
+        probNum,
+        slug
+      });
     } catch (err) {
       console.log("Difficulty fetch error:", err.message);
     }
@@ -129,7 +132,6 @@ export default class VJudgeClient {
     let acceptedCount = 0;
     let uniqueAcceptedProblems = new Set();
 
-    // Obtener sets únicos
     const uniqueContests = new Set();
     const uniqueProblems = new Set();
 
@@ -140,34 +142,44 @@ export default class VJudgeClient {
       }
 
       if (sub.contestId) uniqueContests.add(sub.contestId);
-      uniqueProblems.add(`${sub.oj}-${sub.problemId}-${sub.probNum}`);
+
+      uniqueProblems.add(
+        `${sub.oj}|||${sub.problemId}|||${sub.probNum}`
+      );
     }
 
-    // Pre-fetch paralelo de contests
     await Promise.all(
       [...uniqueContests].map(id => this.getContestName(id))
     );
 
-    // Pre-fetch paralelo de difficulties
     await Promise.all(
       [...uniqueProblems].map(key => {
-        const [oj, problemId, probNum] = key.split("-");
-        return this.getProblemDifficulty(oj, problemId, probNum);
+        const [oj, problemId, probNum] = key.split("|||");
+
+        // En muchos OJs el slug real es probNum
+        const slug = probNum;
+
+        return this.getProblemDifficulty(
+          oj,
+          problemId,
+          probNum,
+          slug
+        );
       })
     );
 
-    // Enrichment ahora es síncrono (usa cache)
     const enriched = submissions.map(sub => ({
       oj: sub.oj,
       problem: sub.probNum,
       problemId: sub.problemId,
+      slug: sub.probNum,
       contestId: sub.contestId,
       contestNum: sub.contestNum,
       contestName: this.contestCache.get(sub.contestId) || null,
       status: sub.status,
-      difficulty: this.difficultyCache.get(
-        `${sub.oj}-${sub.problemId}`
-      ) || "Unknown"
+      difficulty:
+        this.difficultyCache.get(`${sub.oj}-${sub.problemId}`) ||
+        "Unknown"
     }));
 
     const hasMore = submissions.length === this.pageSize;
@@ -187,7 +199,8 @@ export default class VJudgeClient {
           submissions.length === 0
             ? 0
             : ((acceptedCount / submissions.length) * 100).toFixed(2)
-      }
+      },
+      raw: submissions
     };
   }
 }
